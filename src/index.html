@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>787 Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="lock-screen" class="overlay">
+        <div class="lock-card panel">
+            <div class="lock-header">
+                <i class="ph-fill ph-shield-check lock-icon"></i>
+                <h1>787 Vault</h1>
+            </div>
+            <p id="lock-msg">Kasa kilitli. Şifrenizi girin.</p>
+            <div class="input-group">
+                <i class="ph ph-key input-icon"></i>
+                <input type="password" id="master-password" placeholder="Ana şifre" autofocus>
+            </div>
+            <button id="unlock-btn" class="primary-btn">
+                <i class="ph-bold ph-lock-key-open"></i>
+                <span id="unlock-btn-text">Kilidi aç</span>
+            </button>
+            <div id="lock-error" class="error-msg"></div>
+        </div>
+    </div>
+
+    <div id="welcome-overlay" class="welcome-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+        <div class="welcome-card panel">
+            <h2 id="welcome-title">Hoş geldiniz</h2>
+            <p class="welcome-lead muted">787 Vault notlarınızı bu cihazda şifreli saklar. Devam etmeden önce birkaç önemli nokta:</p>
+            <ul class="welcome-list">
+                <li><strong>Ana şifre</strong> kasanızın tek anahtarıdır. Unutursanız notları <strong>geri getirmek mümkün değildir</strong>; servis veya geliştirici bile şifrenizi bilemez.</li>
+                <li><strong>Yedek</strong> (.787bak) Hub’dan alınır; mevcut kasa anahtarıyla şifrelidir. Dosyayı güvenli ve erişilebilir bir yerde saklayın.</li>
+                <li><strong>Hareketsizlik:</strong> Yaklaşık 5 dakika işlem yapılmazsa kasa otomatik kilitlenir. İstediğiniz zaman üstten <strong>Kilitle</strong> de kullanabilirsiniz.</li>
+            </ul>
+            <div class="welcome-shortcuts panel">
+                <span class="welcome-shortcuts-label">Klavye — Windows’ta <kbd>Ctrl</kbd>, macOS’ta <kbd>⌘</kbd></span>
+                <ul class="welcome-shortcuts-list">
+                    <li><kbd>Ctrl</kbd> + <kbd>S</kbd> — Notu kaydet</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>F</kbd> — Notlarda ara</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>N</kbd> — Yeni not</li>
+                    <li><kbd>Ctrl</kbd> + <kbd>L</kbd> — Kilitle</li>
+                </ul>
+            </div>
+            <p class="muted welcome-hint small">Bu pencere yalnızca ilk açılışta gösterilir. <kbd>Esc</kbd> ile de kapatabilirsiniz.</p>
+            <button type="button" id="welcome-dismiss" class="primary-btn welcome-dismiss-btn">
+                <span>Anladım, devam et</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="main-panel" class="hidden">
+        <header class="top-nav panel">
+            <div class="nav-left">
+                <div class="brand">
+                    <i class="ph-fill ph-fingerprint brand-icon"></i>
+                    <h2>787 Vault</h2>
+                    <span id="session-status" class="status-dot" title="Oturum açık"></span>
+                </div>
+            </div>
+            <div class="nav-center">
+                <button type="button" id="nav-hub" class="nav-tab active">
+                    <i class="ph ph-squares-four"></i> Hub
+                </button>
+                <button type="button" id="nav-security" class="nav-tab">
+                    <i class="ph ph-key"></i> Şifre
+                </button>
+            </div>
+            <div class="nav-right">
+                <button type="button" id="lock-app-btn" class="btn-lock">
+                    <i class="ph-bold ph-lock"></i> Kilitle
+                </button>
+            </div>
+        </header>
+
+        <div class="app-body">
+            <aside class="sidebar panel">
+                <div class="sidebar-toolbar">
+                    <div class="search-wrap">
+                        <i class="ph ph-magnifying-glass search-icon"></i>
+                        <input type="search" id="note-search" placeholder="Notlarda ara…" autocomplete="off">
+                    </div>
+                    <label class="search-opt">
+                        <input type="checkbox" id="note-search-content">
+                        <span>İçerikte ara</span>
+                    </label>
+                </div>
+                <div class="sidebar-header">
+                    <h3>Notlar</h3>
+                    <button type="button" id="new-note-btn" class="btn-icon" title="Yeni not">
+                        <i class="ph-bold ph-plus"></i>
+                    </button>
+                </div>
+                <div id="notes-list" class="notes-list"></div>
+            </aside>
+
+            <main class="main-content">
+                <div id="hub-view" class="content-view">
+                    <div class="hub-container">
+                        <div class="hub-welcome">
+                            <h1>Özet</h1>
+                            <p class="muted">Notlarınız bu cihazda şifreli saklanır.</p>
+                        </div>
+                        <div class="hub-stats">
+                            <div class="stat-card panel">
+                                <div class="stat-icon-wrap"><i class="ph ph-files"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Toplam not</span>
+                                    <span id="stat-count" class="stat-value">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-card panel">
+                                <div class="stat-icon-wrap"><i class="ph ph-hourglass"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Kilit süresi</span>
+                                    <span class="stat-value">5 dk</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hub-actions panel">
+                            <h3>Yedek</h3>
+                            <p class="muted small">Yedek, mevcut kasa anahtarıyla şifrelenir (.787bak).</p>
+                            <div class="row-btns">
+                                <button type="button" id="backup-export-btn" class="btn-secondary">
+                                    <i class="ph ph-download-simple"></i> Yedek al
+                                </button>
+                                <button type="button" id="backup-import-btn" class="btn-secondary">
+                                    <i class="ph ph-upload-simple"></i> Yedek yükle
+                                </button>
+                            </div>
+                        </div>
+                        <div class="hub-credits panel">
+                            <h3>Yapımcı ve topluluk</h3>
+                            <p class="muted small">787 Vault geliştiricisi ve 787 Projects Discord topluluğu.</p>
+                            <div class="hub-links-col">
+                                <a
+                                    href="https://github.com/Zywexx"
+                                    class="btn-secondary hub-external-link"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <i class="ph ph-github-logo"></i> GitHub profili — Zywexx
+                                </a>
+                                <a
+                                    href="https://discord.gg/CUFXct9PNz"
+                                    class="btn-secondary hub-external-link"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <i class="ph ph-discord-logo"></i> Discord — 787 Projects
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="note-view" class="content-view hidden">
+                    <div class="editor-header">
+                        <input type="text" id="note-title" placeholder="Başlık">
+                        <div class="actions">
+                            <button type="button" id="delete-note-btn" class="btn-text danger">
+                                <i class="ph ph-trash"></i> Sil
+                            </button>
+                            <button type="button" id="save-note-btn" class="btn-text primary">
+                                <i class="ph ph-floppy-disk"></i> Kaydet
+                            </button>
+                        </div>
+                    </div>
+                    <div class="editor-container panel">
+                        <textarea id="note-content" placeholder="Not içeriği…" spellcheck="false" autocomplete="off"></textarea>
+                    </div>
+                </div>
+
+                <div id="security-view" class="content-view hidden">
+                    <div class="settings-container">
+                        <div class="security-card panel">
+                            <div class="card-header">
+                                <i class="ph-fill ph-key card-icon"></i>
+                                <h2>Ana şifreyi değiştir</h2>
+                            </div>
+                            <p class="muted">Mevcut şifre doğrulanır; tüm notlar yeni şifreyle yeniden şifrelenir.</p>
+
+                            <div class="setting-group input-group">
+                                <i class="ph ph-password input-icon"></i>
+                                <input type="password" id="old-password" placeholder="Mevcut şifre" autocomplete="off">
+                            </div>
+                            <div class="setting-group input-group">
+                                <i class="ph ph-key input-icon"></i>
+                                <input type="password" id="new-password" placeholder="Yeni şifre" autocomplete="off">
+                            </div>
+
+                            <button type="button" id="change-password-btn" class="primary-btn narrow">
+                                <i class="ph-bold ph-arrows-clockwise"></i>
+                                <span id="change-btn-text">Şifreyi güncelle</span>
+                            </button>
+
+                            <div id="change-pwd-error" class="error-msg"></div>
+                        </div>
+
+                        <div class="security-card panel wipe-zone">
+                            <h2 class="wipe-title">Tüm verileri sil</h2>
+                            <p class="muted small">
+                                Kasa dosyası bu cihazdan güvenli şekilde silinir; notlar geri gelmez.
+                                İşlemi yalnızca ana şifreniz doğrulanırsa yapabilirsiniz.
+                            </p>
+                            <div class="setting-group input-group">
+                                <i class="ph ph-lock-key input-icon"></i>
+                                <input type="password" id="wipe-password" placeholder="Onay için ana şifre" autocomplete="off">
+                            </div>
+                            <button type="button" id="wipe-all-btn" class="btn-wipe">
+                                <i class="ph ph-trash"></i> Tüm verileri kalıcı olarak sil
+                            </button>
+                            <div id="wipe-error" class="error-msg"></div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="quit-confirm-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="quit-modal-title">
+        <div class="modal-card panel">
+            <h2 id="quit-modal-title">Kaydedilmemiş değişiklikler</h2>
+            <p class="muted modal-text">Bu notta kaydedilmemiş değişiklik var. Ne yapmak istersiniz?</p>
+            <div class="modal-actions">
+                <button type="button" id="quit-save-btn" class="primary-btn modal-btn">
+                    <i class="ph ph-floppy-disk"></i> Kaydet ve çık
+                </button>
+                <button type="button" id="quit-discard-btn" class="btn-secondary modal-btn">
+                    Kaydetmeden çık
+                </button>
+                <button type="button" id="quit-cancel-btn" class="btn-text modal-btn">
+                    İptal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="renderer.js"></script>
+</body>
+</html>
